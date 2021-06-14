@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+  dehia.front:
+    container_name: dehia.front
+    image: mokocchi/dehia-frontend
+    environment: 
+      GATEWAY_HOST: ${GATEWAY_HOST}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    ports: 
+      - ${PORT}:80

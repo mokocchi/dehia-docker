@@ -1,0 +1,182 @@
+version: '3.3'
+services:
+  dehia.gateway:
+    container_name: dehia.gateway
+    image: mokocchi/dehia-gateway
+    environment:
+      AUTH_BASE_URL: ${AUTH_BASE_URL}
+      DEFINE_BASE_URL: ${DEFINE_BASE_URL}
+      COLLECT_BASE_URL: ${COLLECT_BASE_URL}
+      RESULTS_BASE_URL: ${RESULTS_BASE_URL}
+    ports: 
+      - ${GATEWAY_PORT}:8001
+    networks: 
+      - dehia
+
+  dehia.auth.mysql:
+    container_name: dehia.auth.mysql
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${AUTH_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${AUTH_MYSQL_DATABASE}
+      MYSQL_USER: ${AUTH_MYSQL_USER}
+      MYSQL_PASSWORD: ${AUTH_MYSQL_PASSWORD}
+    networks:
+      dehia.auth.backend:
+        aliases:
+          - dehia.auth.mysql
+
+  dehia.auth.app:
+    container_name: dehia.auth.app
+    image: mokocchi/dehia-auth
+    environment: 
+      MYSQL_DATABASE: ${AUTH_MYSQL_DATABASE}
+      MYSQL_USER: ${AUTH_MYSQL_USER}
+      MYSQL_PASSWORD: ${AUTH_MYSQL_PASSWORD}
+      DATABASE_HOST: ${AUTH_DATABASE_HOST}
+      GOOGLE_CLIENT_ID: ${AUTH_GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${AUTH_GOOGLE_CLIENT_SECRET}
+      SITE_URL: ${AUTH_SITE_URL}
+      JWT_KEY: ${AUTH_JWT_KEY}
+      WAIT_HOSTS: ${AUTH_DATABASE_HOST}:3306
+      WAIT_SLEEP_INTERVAL: 10
+      WAIT_BEFORE_HOSTS: 10
+      WAIT_TIMEOUT: 900
+    depends_on: 
+      - ${AUTH_DATABASE_HOST}
+    expose: 
+      - 80
+    networks: 
+      dehia.auth.backend:
+      dehia:
+        aliases:
+          - dehia.auth.app
+
+  dehia.define.mysql:
+    container_name: dehia.define.mysql
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DEFINE_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DEFINE_MYSQL_DATABASE}
+      MYSQL_USER: ${DEFINE_MYSQL_USER}
+      MYSQL_PASSWORD: ${DEFINE_MYSQL_PASSWORD}
+    networks:
+      dehia.define.backend:
+        aliases:
+          - dehia.define.mysql
+
+  dehia.define.app:
+    container_name: dehia.define.app
+    image: mokocchi/dehia-define
+    depends_on: 
+      - ${DEFINE_MYSQL_HOST}
+    environment: 
+      MYSQL_DATABASE: ${DEFINE_MYSQL_DATABASE}
+      MYSQL_USER: ${DEFINE_MYSQL_USER}
+      MYSQL_PASSWORD: ${DEFINE_MYSQL_PASSWORD}
+      MYSQL_HOST: ${DEFINE_MYSQL_HOST}
+      SITE_BASE_URL: ${DEFINE_SITE_BASE_URL}
+      AUTH_BASE_URL: ${AUTH_BASE_URL}
+      COLLECT_BASE_URL: ${COLLECT_BASE_URL}
+      RESULTS_BASE_URL: ${RESULTS_BASE_URL}
+      WAIT_HOSTS: ${DEFINE_MYSQL_HOST}:3306
+      WAIT_SLEEP_INTERVAL: 10
+      WAIT_BEFORE: 10
+      WAIT_TIMEOUT: 900
+    expose: 
+      - 80
+    networks: 
+      dehia.define.backend:
+      dehia:
+        aliases:
+          - dehia.define.app
+
+  dehia.results.mysql:
+    container_name: dehia.results.mysql
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${RESULTS_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${RESULTS_MYSQL_DATABASE}
+      MYSQL_USER: ${RESULTS_MYSQL_USER}
+      MYSQL_PASSWORD: ${RESULTS_MYSQL_PASSWORD}
+    networks:
+      dehia.results.backend:
+        aliases:
+          - dehia.results.mysql
+
+  dehia.results.app:
+    container_name: dehia.results.app
+    image: mokocchi/dehia-results:latest
+    environment: 
+      MYSQL_DATABASE: ${RESULTS_MYSQL_DATABASE}
+      MYSQL_USER: ${RESULTS_MYSQL_USER}
+      MYSQL_PASSWORD: ${RESULTS_MYSQL_PASSWORD}
+      DATABASE_HOST: ${RESULTS_DATABASE_HOST}
+      SITE_BASE_URL: ${RESULTS_SITE_BASE_URL}
+      AUTH_BASE_URL: ${AUTH_BASE_URL}
+      DEFINE_BASE_URL: ${DEFINE_BASE_URL}
+      COLLECT_BASE_URL: ${COLLECT_BASE_URL}
+      WAIT_HOSTS: ${RESULTS_DATABASE_HOST}:3306
+      WAIT_SLEEP_INTERVAL: 10
+      WAIT_BEFORE: 10
+      WAIT_TIMEOUT: 900
+    depends_on: 
+      - ${RESULTS_DATABASE_HOST}
+    expose:
+      - 80
+    networks: 
+      dehia.results.backend:
+      dehia:
+          aliases:
+            - dehia.results.app
+
+  dehia.collect.mongo:  
+    container_name: dehia.collect.mongo
+    image: mongo:4.2
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${COLLECT_MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${COLLECT_MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_USER: ${COLLECT_MONGO_USER}
+      MONGO_PASSWORD: ${COLLECT_MONGO_PASSWORD}
+      MONGO_DB: ${COLLECT_MONGO_DB}
+    networks: 
+      dehia.collect.backend:
+        aliases:
+          - dehia.collect.mongo
+    command: mongod --auth --bind_ip 0.0.0.0
+    volumes:
+      - ./docker/mongo/init.sh:/docker-entrypoint-initdb.d/init-mongo.sh
+
+  dehia.collect.app:
+    container_name: dehia.collect.app
+    image: mokocchi/dehia-collect
+    depends_on: 
+      - ${COLLECT_DATABASE_HOST}
+    environment: 
+      MONGO_USER: ${COLLECT_MONGO_USER}
+      MONGO_PASSWORD: ${COLLECT_MONGO_PASSWORD}
+      MONGO_DB: ${COLLECT_MONGO_DB}
+      DATABASE_HOST: ${COLLECT_DATABASE_HOST}
+      SITE_BASE_URL: ${COLLECT_SITE_BASE_URL}
+      DEFINE_BASE_URL: ${DEFINE_BASE_URL}
+      AUTH_BASE_URL: ${AUTH_BASE_URL}
+      WAIT_HOSTS: ${COLLECT_DATABASE_HOST}:27017
+      WAIT_SLEEP_INTERVAL: 10
+      WAIT_BEFORE_HOSTS: 10
+      WAIT_TIMEOUT: 900
+    networks: 
+      dehia.collect.backend:
+      dehia:
+        aliases:
+          - dehia.collect.app
+
+networks:
+  dehia:
+    external: false
+  dehia.auth.backend:
+    external: false
+  dehia.define.backend:
+    external: false
+  dehia.results.backend:
+    external: false
+  dehia.collect.backend:
