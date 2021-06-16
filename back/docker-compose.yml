@@ -40,7 +40,7 @@ services:
       JWT_KEY: ${AUTH_JWT_KEY}
       WAIT_HOSTS: ${AUTH_DATABASE_HOST}:3306
       WAIT_SLEEP_INTERVAL: 10
-      WAIT_BEFORE_HOSTS: 10
+      WAIT_BEFORE: 10
       WAIT_TIMEOUT: 900
     depends_on: 
       - ${AUTH_DATABASE_HOST}
@@ -162,7 +162,7 @@ services:
       AUTH_BASE_URL: ${AUTH_BASE_URL}
       WAIT_HOSTS: ${COLLECT_DATABASE_HOST}:27017
       WAIT_SLEEP_INTERVAL: 10
-      WAIT_BEFORE_HOSTS: 10
+      WAIT_BEFORE: 10
       WAIT_TIMEOUT: 900
     networks: 
       dehia.collect.backend:
